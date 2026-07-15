@@ -1,0 +1,86 @@
+/* ===========================================================================
+ * 企业知识库 RAG 问答系统 - 全局样式
+ * =========================================================================== */
+
+/* 全局重置 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, 'Noto Sans SC', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f0f2f5;
+}
+
+#app {
+  height: 100%;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: #c0c4cc;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 链接样式 */
+a {
+  color: #409eff;
+  text-decoration: none;
+}
+a:hover {
+  color: #66b1ff;
+}
+
+/* 页面过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* 统计卡片公共样式 */
+.stat-card {
+  transition: all 0.3s ease;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 问答消息气泡 */
+.message-bubble {
+  border-radius: 12px;
+  padding: 14px 18px;
+  max-width: 85%;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.message-bubble.user {
+  background: #409eff;
+  color: #fff;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+.message-bubble.assistant {
+  background: #f4f4f5;
+  color: #303133;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}

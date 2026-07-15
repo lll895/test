@@ -1,0 +1,33 @@
+# ============================================================================
+# 企业知识库 RAG 问答系统 - Python 依赖包
+# ============================================================================
+
+# --- Web 框架 ---
+Flask==3.1.1
+Flask-CORS==5.0.1
+Flask-SQLAlchemy==3.1.1
+PyMySQL==1.1.1
+pymysql[rsa]
+cryptography==44.0.2
+
+# --- JWT 认证 ---
+Flask-JWT-Extended==4.7.1
+
+# --- LangChain 相关 ---
+langchain==0.3.23
+langchain-community==0.3.20
+langchain-chroma==0.2.4
+
+# --- Ollama 集成 ---
+langchain-ollama==0.2.4
+
+# --- 文档解析 ---
+python-docx==1.1.2
+PyPDF2==3.0.1
+markdown==3.7
+
+# --- Redis 缓存 ---
+redis==5.2.1
+
+# --- 工具类 ---
+python-dotenv==1.1.0

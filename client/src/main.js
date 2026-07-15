@@ -1,0 +1,34 @@
+// ============================================================================
+// 企业知识库 RAG 问答系统 - Vue3 应用入口
+// ============================================================================
+
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
+import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
+
+import App from './App.vue'
+import router from './router'
+import './style.css'
+
+// 创建 Vue 应用实例
+const app = createApp(App)
+
+// 注册 Pinia 状态管理
+app.use(createPinia())
+
+// 注册 Vue Router
+app.use(router)
+
+// 注册 Element Plus UI 框架（使用中文语言包）
+app.use(ElementPlus, { locale: zhCn })
+
+// 全局注册 Element Plus 图标
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+  app.component(key, component)
+}
+
+// 挂载到 DOM
+app.mount('#app')
