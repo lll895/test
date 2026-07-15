@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(timeout 10 mysql -u root -p17759400586 --default-character-set=utf8mb4 dbenterprise -e \"SELECT COUNT\\(*\\) as total_users FROM users;\")"
+    ]
+  }
+}
