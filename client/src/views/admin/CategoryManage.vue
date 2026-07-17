@@ -3,7 +3,7 @@
      ============================================================ -->
 
 <template>
-  <div class="category-manage">
+  <div class="category-manage page-container card-animate">
     <div class="page-header">
       <div>
         <h2>分类管理</h2>
@@ -164,22 +164,6 @@ onMounted(loadCategories)
 .category-manage {
   max-width: 1200px;
   margin: 0 auto;
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-}
-.page-header h2 {
-  font-size: 22px;
-  color: #303133;
-  margin-bottom: 4px;
-}
-.page-header p {
-  color: #909399;
-  font-size: 14px;
 }
 
 .category-name {

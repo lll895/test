@@ -31,13 +31,21 @@ class QaLog(db.Model):
 
     def to_dict(self):
         """转换为字典"""
+        # 安全处理 sources JSON 字段
+        sources = None
+        if self.sources is not None:
+            try:
+                sources = json.loads(self.sources) if isinstance(self.sources, str) else self.sources
+            except (json.JSONDecodeError, TypeError):
+                sources = []
+
         return {
             'id': self.id,
             'user_id': self.user_id,
             'user_name': self.user.real_name or self.user.username if self.user else None,
             'question': self.question,
             'answer': self.answer,
-            'sources': json.loads(self.sources) if isinstance(self.sources, str) else self.sources,
+            'sources': sources,
             'model_used': self.model_used,
             'chunks_retrieved': self.chunks_retrieved,
             'cost_time_ms': self.cost_time_ms,

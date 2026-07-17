@@ -1,0 +1,113 @@
+# ============================================================================
+# 企业知识库 RAG 问答系统 - 手动部署工作流
+# 功能：通过 GitHub Actions 手动触发部署到服务器
+# ============================================================================
+
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '部署环境'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+      branch:
+        description: '部署分支'
+        required: true
+        default: 'main'
+        type: string
+
+jobs:
+  frontend:
+    name: Build & Deploy Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'client/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd client
+          npm ci
+
+      - name: Build frontend
+        run: |
+          cd client
+          npx vite build --mode ${{ github.event.inputs.environment }}
+        env:
+          VITE_API_BASE_URL: ${{ secrets[format('VITE_API_BASE_URL_{0}', github.event.inputs.environment)] || '/api' }}
+
+      - name: Deploy to server via SSH
+        uses: easingthemes/ssh-deploy@v4
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          remote-host: ${{ secrets[format('DEPLOY_HOST_{0}', github.event.inputs.environment)] }}
+          remote-user: ${{ secrets[format('DEPLOY_USER_{0}', github.event.inputs.environment)] }}
+          remote-port: ${{ secrets[format('DEPLOY_PORT_{0}', github.event.inputs.environment)] || '22' }}
+          source: 'client/dist/'
+          target: ${{ secrets[format('DEPLOY_FRONTEND_PATH_{0}', github.event.inputs.environment)] }}
+          rsync-options: '--archive --compress --delete'
+
+      - name: Clear CDN cache (if applicable)
+        run: |
+          echo "CDN cache clearing placeholder - configure with your CDN provider"
+
+  backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    needs: frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Deploy backend via SSH
+        uses: easingthemes/ssh-deploy@v4
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          remote-host: ${{ secrets[format('DEPLOY_HOST_{0}', github.event.inputs.environment)] }}
+          remote-user: ${{ secrets[format('DEPLOY_USER_{0}', github.event.inputs.environment)] }}
+          remote-port: ${{ secrets[format('DEPLOY_PORT_{0}', github.event.inputs.environment)] || '22' }}
+          source: 'server/'
+          target: ${{ secrets[format('DEPLOY_BACKEND_PATH_{0}', github.event.inputs.environment)] }}
+          rsync-options: '--archive --compress --delete --exclude=.venv --exclude=__pycache__ --exclude=*.pyc --exclude=.env --exclude=chroma_db'
+
+      - name: Restart backend service
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets[format('DEPLOY_HOST_{0}', github.event.inputs.environment)] }}
+          username: ${{ secrets[format('DEPLOY_USER_{0}', github.event.inputs.environment)] }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets[format('DEPLOY_PORT_{0}', github.event.inputs.environment)] || '22' }}
+          script: |
+            cd ${{ secrets[format('DEPLOY_BACKEND_PATH_{0}', github.event.inputs.environment)] }}
+            # 创建虚拟环境并安装依赖
+            if [ ! -d ".venv" ]; then
+              python3 -m venv .venv
+            fi
+            source .venv/bin/activate
+            pip install -r requirements.txt --quiet
+
+            # 复制环境变量文件
+            cp .env.production .env 2>/dev/null || true
+
+            # 重启服务
+            sudo systemctl restart enterprise-oa 2>/dev/null || \
+              echo "请手动重启服务: sudo systemctl restart enterprise-oa"

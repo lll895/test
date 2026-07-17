@@ -7,8 +7,13 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from models.user import User
 from utils import db
+from utils.logger import get_logger
 import hashlib
+import uuid
+import os
 from datetime import datetime
+
+logger = get_logger(__name__)
 
 # 创建认证蓝图
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
@@ -129,6 +134,99 @@ def get_profile():
         return jsonify({'code': 404, 'data': None, 'message': '用户不存在'}), 404
 
     return jsonify({'code': 200, 'data': user.to_dict(), 'message': '获取成功'})
+
+
+# ==================== 忘记密码 / 重置密码 ====================
+
+_RESET_TOKEN_TTL = 1800  # 30 分钟
+
+
+@auth_bp.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    """
+    忘记密码 - 生成重置令牌（使用独立表，不影响 User 模型）
+    请求体: {"username": "xxx", "email": "xxx"}
+    """
+    data = request.get_json()
+    username = data.get('username', '').strip()
+    email = data.get('email', '').strip()
+
+    if not username and not email:
+        return jsonify({'code': 400, 'data': None, 'message': '请输入用户名或邮箱'}), 400
+
+    # 查找用户
+    query = User.query
+    if username:
+        query = query.filter_by(username=username)
+    if email:
+        query = query.filter(User.email == email)
+
+    user = query.first()
+    if not user:
+        logger.info(f"密码重置请求: 用户不存在 username={username}, email={email}")
+        return jsonify({'code': 200, 'data': None,
+                        'message': '如果该账号存在，重置链接将通过邮箱发送'})
+
+    # 创建重置令牌（使用独立表，自动使旧令牌失效）
+    from models.password_reset import PasswordResetToken
+    reset_token = PasswordResetToken.create_for_user(
+        user_id=user.id,
+        ttl_seconds=_RESET_TOKEN_TTL,
+    )
+
+    logger.info(f"密码重置令牌已生成: user={user.username}, expires_in={_RESET_TOKEN_TTL}s")
+
+    # 开发/演示环境：直接返回令牌
+    from config import Config
+    env = getattr(Config, 'FLASK_ENV', 'development') or 'development'
+    env = os.environ.get('FLASK_ENV', env)
+    if env in ('development', 'testing'):
+        return jsonify({
+            'code': 200,
+            'data': {
+                'reset_token': reset_token.token,
+                'expires_in': _RESET_TOKEN_TTL,
+            },
+            'message': '重置令牌已生成（开发模式）'
+        })
+
+    return jsonify({'code': 200, 'data': None,
+                    'message': '如果该账号存在，重置链接将通过邮箱发送'})
+
+
+@auth_bp.route('/reset-password', methods=['POST'])
+def reset_password():
+    """
+    使用重置令牌设置新密码
+    请求体: {"token": "xxx", "new_password": "xxx"}
+    """
+    data = request.get_json()
+    token_str = data.get('token', '').strip()
+    new_password = data.get('new_password', '').strip()
+
+    if not token_str or not new_password:
+        return jsonify({'code': 400, 'data': None, 'message': '参数不完整'}), 400
+
+    if len(new_password) < 6:
+        return jsonify({'code': 400, 'data': None, 'message': '密码长度不能少于6位'}), 400
+
+    # 验证令牌并消耗
+    from models.password_reset import PasswordResetToken
+    token_record = PasswordResetToken.verify_and_consume(token_str)
+
+    if not token_record:
+        return jsonify({'code': 400, 'data': None, 'message': '令牌无效或已过期，请重新申请'}), 400
+
+    # 更新密码
+    user = token_record.user
+    user.password = md5_encrypt(new_password)
+    db.session.commit()
+
+    logger.info(f"密码重置成功: user={user.username}")
+    return jsonify({'code': 200, 'data': None, 'message': '密码重置成功，请使用新密码登录'})
+
+
+# ==================== 个人资料管理 ====================
 
 
 @auth_bp.route('/profile', methods=['PUT'])

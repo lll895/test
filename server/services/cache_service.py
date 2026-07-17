@@ -8,6 +8,9 @@ import json
 import hashlib
 import time
 from config import Config
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class CacheService:
@@ -38,13 +41,13 @@ class CacheService:
             # 测试连接
             self._client.ping()
             self._connected = True
-            print(f"[缓存服务] Redis 连接成功 ({Config.REDIS_HOST}:{Config.REDIS_PORT})")
+            logger.info(f"Redis 连接成功 ({Config.REDIS_HOST}:{Config.REDIS_PORT})")
         except redis.ConnectionError:
             self._connected = False
-            print(f"[缓存服务] Redis 连接失败，缓存功能将降级为直读模式")
+            logger.warning("Redis 连接失败，缓存功能将降级为直读模式")
         except Exception as e:
             self._connected = False
-            print(f"[缓存服务] Redis 初始化异常: {e}")
+            logger.warning(f"Redis 初始化异常: {e}")
 
     @property
     def is_connected(self) -> bool:
@@ -85,7 +88,7 @@ class CacheService:
                 return json.loads(data)
             return None
         except Exception as e:
-            print(f"[缓存服务] 读取失败 ({key}): {e}")
+            logger.error(f"读取失败 ({key}): {e}")
             return None
 
     def set(self, key: str, value: any, ttl: int = 300) -> bool:
@@ -96,7 +99,7 @@ class CacheService:
             self._client.setex(key, ttl, json.dumps(value, ensure_ascii=False))
             return True
         except Exception as e:
-            print(f"[缓存服务] 写入失败 ({key}): {e}")
+            logger.error(f"写入失败 ({key}): {e}")
             return False
 
     def delete(self, key: str) -> bool:
@@ -130,7 +133,7 @@ class CacheService:
                     break
             return deleted
         except Exception as e:
-            print(f"[缓存服务] 模式删除失败 ({pattern}): {e}")
+            logger.error(f"模式删除失败 ({pattern}): {e}")
             return 0
 
     def exists(self, key: str) -> bool:
@@ -160,7 +163,7 @@ class CacheService:
         key = self._make_key("qa", "exact", q_hash)
         cached = self.get(key)
         if cached:
-            print(f"[缓存服务] 命中精确问答缓存: {clean_q[:30]}...")
+            logger.debug(f"命中精确问答缓存: {clean_q[:30]}...")
             return cached
 
         return None
@@ -178,7 +181,7 @@ class CacheService:
     def invalidate_qa_cache(self):
         """使所有问答缓存失效（新增文档时调用）"""
         self.delete_pattern("qa:*")
-        print("[缓存服务] 已清除所有问答缓存")
+        logger.info("已清除所有问答缓存")
 
     # ==================== 向量检索缓存 ====================
 
@@ -205,7 +208,7 @@ class CacheService:
     def invalidate_vector_cache(self):
         """使所有向量缓存失效（新增文档时调用）"""
         self.delete_pattern("vector:*")
-        print("[缓存服务] 已清除所有向量检索缓存")
+        logger.info("已清除所有向量检索缓存")
 
     # ==================== 业务数据缓存 ====================
 
@@ -281,7 +284,7 @@ class CacheService:
             # 限制长度，防止无限增长
             self._client.ltrim(key, -20, -1)  # 保留最近20条
         except Exception as e:
-            print(f"[缓存服务] 追加对话失败: {e}")
+            logger.error(f"追加对话失败: {e}")
 
     def clear_conversation(self, session_id: str):
         """清除对话历史"""
@@ -339,9 +342,9 @@ class CacheService:
         """预热常用缓存（启动时调用）"""
         if not self._connected:
             return
-        print("[缓存服务] 开始缓存预热...")
+        logger.info("开始缓存预热...")
         # 可以在这里添加常用的缓存预热逻辑
-        print("[缓存服务] 缓存预热完成")
+        logger.info("缓存预热完成")
 
 
 # 全局单例

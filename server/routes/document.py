@@ -4,19 +4,36 @@
 # ============================================================================
 
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from models.document import Document, Category, DocumentChunk
 from services.document_service import document_service
 from services.vector_service import vector_service
 from services.cache_service import cache_service
 from utils import db
+from utils.logger import get_logger
 import os
 from werkzeug.utils import secure_filename
 import uuid
 from sqlalchemy import or_
 
+logger = get_logger(__name__)
+
 # 创建文档管理蓝图
 document_bp = Blueprint('document', __name__, url_prefix='/api/documents')
+
+
+def admin_required():
+    """管理员权限装饰器"""
+    from functools import wraps
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            claims = get_jwt()
+            if claims.get('role') != 'admin':
+                return jsonify({'code': 403, 'data': None, 'message': '需要管理员权限'}), 403
+            return f(*args, **kwargs)
+        return wrapper
+    return decorator
 
 
 @document_bp.route('', methods=['GET'])
@@ -53,7 +70,19 @@ def get_documents():
     # 分页
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
-    docs = [doc.to_dict() for doc in pagination.items]
+    docs = []
+    for doc in pagination.items:
+        try:
+            docs.append(doc.to_dict())
+        except Exception as e:
+            logger.error(f"序列化文档失败 id={doc.id}: {e}")
+            # 保守返回，只返回基础字段
+            docs.append({
+                'id': doc.id,
+                'title': doc.title,
+                'status': getattr(doc, 'status', 'unknown'),
+                'created_at': doc.created_at.isoformat() if doc.created_at else None,
+            })
 
     return jsonify({
         'code': 200,
@@ -85,6 +114,7 @@ def get_document_detail(doc_id: int):
 
 @document_bp.route('/upload', methods=['POST'])
 @jwt_required()
+@admin_required()
 def upload_document():
     """
     上传并处理文档
@@ -112,18 +142,33 @@ def upload_document():
     file_type = document_service.SUPPORTED_EXTENSIONS[ext]
     title = request.form.get('title', '').strip() or os.path.splitext(file.filename)[0]
     category_id = request.form.get('category_id', type=int)
+    change_note = request.form.get('change_note', '').strip()
 
     try:
-        # 1. 保存文件到本地
+        # 1. 检查是否已有同标题文档（版本管理）
+        existing_doc = Document.query.filter_by(title=title, status='ready').order_by(
+            Document.version.desc()).first()
+
+        if existing_doc and existing_doc.version_group_id:
+            # 有同标题文档 → 创建新版本
+            version_group_id = existing_doc.version_group_id
+            new_version = existing_doc.version + 1
+            # 旧文档标记为非活跃（或保持原样，新版本另立记录）
+            logger.info(f"检测到文档 '{title}' 已有版本 {existing_doc.version}，创建 v{new_version}")
+        else:
+            version_group_id = uuid.uuid4().hex
+            new_version = 1
+
+        # 2. 保存文件到本地
         safe_filename = f"{uuid.uuid4().hex}_{secure_filename(file.filename)}"
         file_path = os.path.join(document_service.UPLOAD_DIR, safe_filename)
         file.save(file_path)
         file_size = os.path.getsize(file_path)
 
-        # 2. 提取文本内容
+        # 3. 提取文本内容
         content_text = document_service.extract_text(file_path, file_type)
 
-        # 3. 创建文档记录（状态为 processing）
+        # 4. 创建文档记录（状态为 processing）
         doc = Document(
             title=title,
             file_name=file.filename,
@@ -134,7 +179,10 @@ def upload_document():
             summary='',
             category_id=category_id,
             uploaded_by=user_id,
-            status='processing',  # 初始状态为处理中
+            version=new_version,
+            version_group_id=version_group_id,
+            change_note=change_note or (f'初始版本' if new_version == 1 else f'版本 {new_version} 更新'),
+            status='processing',
         )
         db.session.add(doc)
         db.session.commit()
@@ -159,12 +207,13 @@ def upload_document():
             }), 500
 
     except Exception as e:
-        print(f"[文档路由] 上传失败: {e}")
+        logger.error(f"上传失败: {e}")
         return jsonify({'code': 500, 'data': None, 'message': f'上传失败: {str(e)}'}), 500
 
 
 @document_bp.route('/<int:doc_id>', methods=['DELETE'])
 @jwt_required()
+@admin_required()
 def delete_document(doc_id: int):
     """
     删除文档（同时删除向量数据库中的向量和本地文件）
@@ -199,7 +248,7 @@ def delete_document(doc_id: int):
 
     except Exception as e:
         db.session.rollback()
-        print(f"[文档路由] 删除失败: {e}")
+        logger.error(f"删除失败: {e}")
         return jsonify({'code': 500, 'data': None, 'message': f'删除失败: {str(e)}'}), 500
 
 
@@ -327,7 +376,7 @@ def search_documents():
                 if doc and doc.status == 'ready':
                     semantic_docs.append(doc.to_dict())
         except Exception as e:
-            print(f"[文档路由] 语义搜索失败: {e}")
+            logger.warning(f"语义搜索失败: {e}")
             semantic_docs = []
 
         # 3. 合并结果（去重）
@@ -367,7 +416,7 @@ def search_documents():
         })
 
     except Exception as e:
-        print(f"[文档路由] 搜索失败: {e}")
+        logger.error(f"搜索失败: {e}", exc_info=True)
         return jsonify({'code': 500, 'data': None, 'message': f'搜索失败: {str(e)}'}), 500
 
 
@@ -398,7 +447,152 @@ def get_document_content(doc_id: int):
             'chunks': [c.to_dict() for c in chunks],
             'file_type': doc.file_type,
             'file_name': doc.file_name,
+            'version': doc.version,
+            'version_group_id': doc.version_group_id,
+            'change_note': doc.change_note,
             'created_at': doc.created_at.isoformat() if doc.created_at else None,
         },
         'message': '获取成功',
     })
+
+
+# ==================== 文档版本管理 ====================
+
+
+@document_bp.route('/<int:doc_id>/versions', methods=['GET'])
+@jwt_required()
+def get_document_versions(doc_id: int):
+    """
+    获取文档的版本历史
+    Args:
+        doc_id: 文档ID
+    """
+    doc = Document.query.get(doc_id)
+    if not doc:
+        return jsonify({'code': 404, 'data': None, 'message': '文档不存在'}), 404
+
+    if not doc.version_group_id:
+        return jsonify({
+            'code': 200,
+            'data': {
+                'versions': [doc.to_dict()],
+                'current_version': doc.version,
+                'total': 1,
+            },
+            'message': '获取成功',
+        })
+
+    # 查找同组所有版本
+    versions = Document.query.filter_by(
+        version_group_id=doc.version_group_id
+    ).order_by(Document.version.desc()).all()
+
+    return jsonify({
+        'code': 200,
+        'data': {
+            'versions': [v.to_dict() for v in versions],
+            'current_version': doc.version,
+            'current_id': doc.id,
+            'title': doc.title,
+            'total': len(versions),
+        },
+        'message': '获取成功',
+    })
+
+
+# ==================== 文档编辑 ====================
+
+
+@document_bp.route('/<int:doc_id>', methods=['PUT'])
+@jwt_required()
+@admin_required()
+def update_document(doc_id: int):
+    """
+    更新文档元信息（标题、分类、摘要等）
+    Args:
+        doc_id: 文档ID
+    请求体: 可包含 title, category_id, summary
+    """
+    doc = Document.query.get(doc_id)
+    if not doc:
+        return jsonify({'code': 404, 'data': None, 'message': '文档不存在'}), 404
+
+    data = request.get_json() or {}
+
+    updatable_fields = ['title', 'category_id', 'summary']
+    for field in updatable_fields:
+        if field in data:
+            setattr(doc, field, data[field])
+
+    db.session.commit()
+    cache_service.invalidate_qa_cache()
+
+    logger.info(f"文档已更新: id={doc_id}, title={doc.title}")
+    return jsonify({'code': 200, 'data': doc.to_dict(), 'message': '文档已更新'})
+
+
+@document_bp.route('/<int:doc_id>/content', methods=['PUT'])
+@jwt_required()
+@admin_required()
+def update_document_content(doc_id: int):
+    """
+    更新文档内容（在线编辑后保存）
+    Args:
+        doc_id: 文档ID
+    请求体: { "content_text": "...", "summary": "..." }
+    """
+    doc = Document.query.get(doc_id)
+    if not doc:
+        return jsonify({'code': 404, 'data': None, 'message': '文档不存在'}), 404
+
+    data = request.get_json() or {}
+    content_text = data.get('content_text', '').strip()
+    summary = data.get('summary', '').strip()
+
+    if not content_text:
+        return jsonify({'code': 400, 'data': None, 'message': '内容不能为空'}), 400
+
+    # 备份旧内容
+    old_content = doc.content_text
+
+    # 更新内容
+    doc.content_text = content_text[:50000]  # 限制长度
+    if summary:
+        doc.summary = summary[:500]
+    elif not doc.summary:
+        doc.summary = content_text[:200] + '...' if len(content_text) > 200 else content_text
+
+    # 重新向量化
+    doc.status = 'processing'
+    db.session.commit()
+
+    try:
+        # 删除旧向量
+        vector_ids = [chunk.vector_id for chunk in doc.chunks if chunk.vector_id]
+        if vector_ids:
+            vector_service.delete_document(vector_ids)
+
+        # 删除旧 chunks
+        DocumentChunk.query.filter_by(document_id=doc_id).delete()
+        db.session.commit()
+
+        # 重新处理
+        success = document_service.process_document(doc.id, doc.title, content_text)
+
+        if not success:
+            # 回滚内容
+            doc.content_text = old_content
+            doc.status = 'ready'
+            db.session.commit()
+            return jsonify({'code': 500, 'data': None, 'message': '文档向量化失败'}), 500
+
+        cache_service.invalidate_qa_cache()
+        cache_service.invalidate_vector_cache()
+
+        logger.info(f"文档内容已更新并重新向量化: id={doc_id}")
+        return jsonify({'code': 200, 'data': doc.to_dict(), 'message': '文档内容已更新'})
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"文档内容更新失败: {e}")
+        return jsonify({'code': 500, 'data': None, 'message': f'更新失败: {str(e)}'}), 500

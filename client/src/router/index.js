@@ -16,7 +16,15 @@ const routes = [
   {
     path: '/',
     component: () => import('../views/Layout.vue'),
-    redirect: '/home',
+    redirect: () => {
+      // 根据用户角色重定向到不同首页
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}')
+        return user.role === 'admin' ? '/home' : '/user-home'
+      } catch {
+        return '/user-home'
+      }
+    },
     children: [
       {
         path: 'home',
@@ -84,6 +92,18 @@ const routes = [
         component: () => import('../views/admin/CategoryManage.vue'),
         meta: { title: '分类管理', roles: ['admin'] },
       },
+      {
+        path: 'profile',
+        name: 'Profile',
+        component: () => import('../views/profile/Profile.vue'),
+        meta: { title: '个人信息' },
+      },
+      {
+        path: 'workflow/:actionId',
+        name: 'WorkflowForm',
+        component: () => import('../views/workflow/WorkflowForm.vue'),
+        meta: { title: '申请表单' },
+      },
     ],
   },
 ]
@@ -104,7 +124,7 @@ router.beforeEach((to, from, next) => {
 
   // 无需认证的页面（如登录页）直接放行
   if (to.meta.noAuth) {
-    // 已登录用户访问登录页，重定向到首页
+    // 已登录用户访问登录页，重定向到对应首页（由根路由redirect处理角色）
     if (token && to.path === '/login') {
       next('/')
     } else {
@@ -124,8 +144,9 @@ router.beforeEach((to, from, next) => {
     try {
       const user = JSON.parse(userStr)
       if (!to.meta.roles.includes(user.role)) {
-        // 没有权限，重定向到首页
-        next('/')
+        // 没有权限，重定向到对应用户的首页（避免循环）
+        const fallback = user.role === 'admin' ? '/home' : '/user-home'
+        next(fallback)
         return
       }
     } catch {

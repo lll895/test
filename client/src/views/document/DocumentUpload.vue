@@ -3,11 +3,19 @@
      ============================================================ -->
 
 <template>
-  <div class="document-upload">
+  <div class="document-upload page-container card-animate">
     <div class="page-header">
       <h2>上传文档</h2>
       <p>支持 PDF、Word、TXT、Markdown 格式</p>
     </div>
+
+    <el-alert
+      title="仅管理员可上传文档"
+      type="warning"
+      show-icon
+      :closable="false"
+      class="admin-note"
+    />
 
     <el-row :gutter="20">
       <el-col :xs="24" :lg="16">
@@ -70,6 +78,15 @@
               </el-select>
             </el-form-item>
 
+            <el-form-item label="版本说明（选填）">
+              <el-input
+                v-model="form.change_note"
+                placeholder="例如：更新了第三章内容"
+                :maxlength="200"
+                show-word-limit
+              />
+            </el-form-item>
+
             <el-form-item>
               <el-button
                 type="primary"
@@ -98,9 +115,14 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { UploadFilled, Document } from '@element-plus/icons-vue'
 import { documentAPI } from '../../api'
+import { useUserStore } from '../../stores/user'
+
+const router = useRouter()
+const userStore = useUserStore()
 
 const categories = ref([])
 const selectedFile = ref(null)
@@ -111,6 +133,7 @@ const uploadSuccess = ref(false)
 const form = ref({
   title: '',
   category_id: null,
+  change_note: '',
 })
 
 /** 文件选择 */
@@ -156,6 +179,9 @@ async function handleUpload() {
     if (form.value.category_id) {
       formData.append('category_id', form.value.category_id)
     }
+    if (form.value.change_note) {
+      formData.append('change_note', form.value.change_note)
+    }
 
     const res = await documentAPI.upload(formData)
     if (res.code === 200) {
@@ -165,6 +191,7 @@ async function handleUpload() {
       // 重置
       selectedFile.value = null
       form.value.title = ''
+      form.value.change_note = ''
     } else {
       uploadSuccess.value = false
       uploadResult.value = res.message || '上传失败'
@@ -189,7 +216,14 @@ async function loadCategories() {
   }
 }
 
-onMounted(loadCategories)
+onMounted(() => {
+  if (!userStore.isAdmin) {
+    ElMessage.error('仅管理员可上传文档')
+    router.push('/documents')
+    return
+  }
+  loadCategories()
+})
 </script>
 
 <style scoped>
@@ -198,17 +232,8 @@ onMounted(loadCategories)
   margin: 0 auto;
 }
 
-.page-header {
-  margin-bottom: 24px;
-}
-.page-header h2 {
-  font-size: 22px;
-  color: #303133;
-  margin-bottom: 4px;
-}
-.page-header p {
-  color: #909399;
-  font-size: 14px;
+.admin-note {
+  margin-bottom: 16px;
 }
 
 .upload-icon {
@@ -216,24 +241,24 @@ onMounted(loadCategories)
 }
 
 .upload-text p {
-  color: #606266;
+  color: var(--text-regular);
   font-size: 14px;
 }
 .upload-text em {
-  color: #409eff;
+  color: var(--primary);
   font-style: normal;
 }
 .upload-hint {
   font-size: 12px !important;
-  color: #909399 !important;
+  color: var(--text-secondary) !important;
   margin-top: 8px;
 }
 
 .file-info {
   margin-top: 20px;
   padding: 16px;
-  background: #f5f7fa;
-  border-radius: 8px;
+  background: var(--primary-bg);
+  border-radius: var(--radius-sm);
 }
 
 .file-info-header {
@@ -248,12 +273,12 @@ onMounted(loadCategories)
 
 .file-name {
   font-weight: 600;
-  color: #303133;
+  color: var(--text-primary);
 }
 
 .file-size {
   font-size: 13px;
-  color: #909399;
+  color: var(--text-secondary);
   margin-top: 2px;
 }
 </style>

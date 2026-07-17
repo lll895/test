@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(npm install *)",
-      "Bash(timeout 10 mysql -u root -p17759400586 --default-character-set=utf8mb4 dbenterprise -e \"SELECT COUNT\\(*\\) as total_users FROM users;\")"
+      "Bash(timeout 10 mysql -u root -p17759400586 --default-character-set=utf8mb4 dbenterprise -e \"SELECT COUNT\\(*\\) as total_users FROM users;\")",
+      "Bash(rm -f ~/.ssh/github_temp_key ~/.ssh/github_temp_key.pub && echo \"Local SSH key files deleted\")",
+      "Bash(python -c ' *)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\LENOVO\\.ssh"
     ]
   }
 }

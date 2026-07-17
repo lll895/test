@@ -147,12 +147,14 @@
     <div class="chat-input-area">
       <el-input v-model="question" type="textarea" :rows="2"
         :placeholder="isAsking ? '小知正在回答中...' : '请输入您的问题...'"
-        :disabled="isAsking" @keydown.enter.prevent="handleSend" resize="none" />
+        :disabled="isAsking" resize="none"
+        @keydown="handleInputKeydown" />
       <div class="input-actions">
         <el-button type="primary" :icon="Promotion" :loading="isAsking"
           :disabled="!question.trim() || isAsking" @click="handleSend" class="send-btn">
           发送
         </el-button>
+        <span class="input-hint">Enter 发送 / Shift+Enter 换行</span>
       </div>
     </div>
   </div>
@@ -160,7 +162,7 @@
 
 <script setup>
 import { ref, nextTick, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   ChatLineSquare, Loading, Promotion, Reading, UserFilled,
@@ -174,6 +176,7 @@ const isAsking = ref(false)
 const isRetrying = ref(false)
 const messagesRef = ref(null)
 const sessionId = ref(null)
+const router = useRouter()
 
 const quickQuestions = [
   '公司考勤时间是怎么规定的？',
@@ -250,11 +253,23 @@ async function toggleBookmark(msg) {
   }
 }
 
-/** 打开工作流链接 */
+/** 打开工作流链接 - 内部页面直接路由，外部链接新窗口打开 */
 function openWorkflowUrl(action) {
-  if (action.url) {
-    window.open(action.url, '_blank')
+  if (!action.url) {
+    ElMessage.info('该操作暂未配置')
+    return
   }
+  // 内部路由（以 / 开头）
+  if (action.url.startsWith('/')) {
+    router.push(`/workflow/${action.id}`)
+    return
+  }
+  // 外部占位链接
+  if (action.url.includes('company.com') || action.url.includes('example.com')) {
+    ElMessage.info(`「${action.label}」功能尚未对接，请联系管理员配置`)
+    return
+  }
+  window.open(action.url, '_blank')
 }
 
 /** 匹配工作流按钮 */
@@ -297,6 +312,14 @@ function copyAnswer(text) {
     document.body.removeChild(ta)
     ElMessage.success('已复制到剪贴板')
   })
+}
+
+/** 输入框键盘事件处理：Enter发送，Shift+Enter换行 */
+function handleInputKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault()
+    handleSend()
+  }
 }
 
 /** 发送问题 - 先试 SSE 流式，失败则走标准 API */
@@ -467,6 +490,7 @@ onMounted(() => {
   scrollToBottom()
   // 检查是否有从对话历史恢复的 session
   const route = useRoute()
+  const router = useRouter()
   if (route.query.session) {
     sessionId.value = route.query.session
     ElMessage.success('对话已恢复')
@@ -574,4 +598,5 @@ onMounted(() => {
 .chat-input-area .el-textarea :deep(.el-textarea__inner:focus) { border-color: #409eff; box-shadow: 0 0 0 2px rgba(64,158,255,0.1); }
 .input-actions { display: flex; flex-direction: column; gap: 8px; }
 .send-btn { height: 56px; min-width: 100px; border-radius: 12px; font-size: 15px; }
+.input-hint { font-size: 11px; color: #c0c4cc; text-align: center; display: block; margin-top: 2px; white-space: nowrap; }
 </style>

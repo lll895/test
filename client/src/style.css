@@ -1,86 +1,220 @@
 /* ===========================================================================
- * 企业知识库 RAG 问答系统 - 全局样式
+ * 企业知识库 RAG 问答系统 - 全局样式 v2.0（灵动升级版）
  * =========================================================================== */
 
-/* 全局重置 */
+/* ---------- CSS 设计变量 ---------- */
+:root {
+  --primary: #409eff;
+  --primary-light: #66b1ff;
+  --primary-dark: #2a6eb0;
+  --primary-bg: rgba(64, 158, 255, 0.08);
+  --success: #67c23a;
+  --warning: #e6a23c;
+  --danger: #f56c6c;
+  --info: #909399;
+  --text-primary: #303133;
+  --text-regular: #606266;
+  --text-secondary: #909399;
+  --text-placeholder: #c0c4cc;
+  --border-base: #dcdfe6;
+  --border-light: #e4e7ed;
+  --border-lighter: #ebeef5;
+  --bg-page: #f0f2f5;
+  --bg-card: #ffffff;
+  --bg-sidebar: #1d1e1f;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-hover: 0 8px 24px rgba(64, 158, 255, 0.15);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+/* ---------- 全局重置 ---------- */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
-html, body {
+html {
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, 'Noto Sans SC', sans-serif;
+  scroll-behavior: smooth;
+}
+
+body {
+  height: 100%;
+  font-family: var(--font-family);
+  font-size: 14px;
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f0f2f5;
+  background-color: var(--bg-page);
+  line-height: 1.5;
 }
 
 #app {
   height: 100%;
 }
 
-/* 滚动条美化 */
+/* ---------- 滚动条美化 ---------- */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-thumb {
-  background: #c0c4cc;
-  border-radius: 3px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+::-webkit-scrollbar-thumb {
+  background: #c0c4cc;
+  border-radius: 3px;
+  transition: background var(--transition-fast);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #909399;
+}
 
-/* 链接样式 */
+/* ---------- 链接样式 ---------- */
 a {
-  color: #409eff;
+  color: var(--primary);
   text-decoration: none;
+  transition: color var(--transition-fast);
 }
 a:hover {
-  color: #66b1ff;
+  color: var(--primary-light);
 }
 
-/* 页面过渡动画 */
+/* ---------- 页面过渡动画 ---------- */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
-.fade-enter-from,
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
 .fade-leave-to {
   opacity: 0;
+  transform: translateY(-8px);
 }
 
-/* 统计卡片公共样式 */
+/* ---------- 卡片飞入动画 ---------- */
+@keyframes cardFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.card-animate {
+  animation: cardFadeInUp 0.5s ease forwards;
+}
+.card-animate:nth-child(1) { animation-delay: 0.05s; }
+.card-animate:nth-child(2) { animation-delay: 0.1s; }
+.card-animate:nth-child(3) { animation-delay: 0.15s; }
+.card-animate:nth-child(4) { animation-delay: 0.2s; }
+
+/* ---------- 脉冲点 ---------- */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ---------- 全局卡片统一样式 ---------- */
+.el-card {
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--border-lighter) !important;
+  transition: all var(--transition-normal) !important;
+}
+.el-card:hover {
+  box-shadow: var(--shadow-md) !important;
+}
+
+/* ---------- 按钮统一样式 ---------- */
+.el-button {
+  border-radius: var(--radius-sm) !important;
+  transition: all var(--transition-fast) !important;
+}
+.el-button--primary {
+  --el-button-hover-bg-color: var(--primary-light) !important;
+}
+
+/* ---------- 输入框统一样式 ---------- */
+.el-input__wrapper,
+.el-textarea__inner {
+  border-radius: var(--radius-sm) !important;
+  transition: all var(--transition-fast) !important;
+}
+.el-input__wrapper:hover,
+.el-textarea__inner:hover {
+  box-shadow: 0 0 0 1px var(--border-base) inset !important;
+}
+
+/* ---------- 表格统一样式 ---------- */
+.el-table {
+  border-radius: var(--radius-sm) !important;
+  overflow: hidden !important;
+}
+.el-table th.el-table__cell {
+  background-color: #fafafa !important;
+  font-weight: 600 !important;
+  color: var(--text-primary) !important;
+}
+
+/* ---------- 标签统一样式 ---------- */
+.el-tag {
+  border-radius: 4px !important;
+  transition: all var(--transition-fast) !important;
+}
+
+/* ---------- 统计卡片 ---------- */
 .stat-card {
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
 }
 .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-hover) !important;
 }
 
-/* 问答消息气泡 */
-.message-bubble {
-  border-radius: 12px;
-  padding: 14px 18px;
-  max-width: 85%;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-wrap: break-word;
+/* ---------- 页面标题统一样式 ---------- */
+.page-header {
+  margin-bottom: 24px;
+  animation: cardFadeInUp 0.4s ease;
 }
-.message-bubble.user {
-  background: #409eff;
-  color: #fff;
-  align-self: flex-end;
-  border-bottom-right-radius: 4px;
+.page-header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
 }
-.message-bubble.assistant {
-  background: #f4f4f5;
-  color: #303133;
-  align-self: flex-start;
-  border-bottom-left-radius: 4px;
+.page-header p {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* ---------- 内容区统一样式 ---------- */
+.page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  animation: cardFadeInUp 0.4s ease;
+}
+
+/* ---------- 骨架屏 ---------- */
+.el-skeleton {
+  border-radius: var(--radius-sm);
 }

@@ -1,0 +1,70 @@
+# ============================================================================
+# 企业知识库 RAG 问答系统 - 前端 CI 工作流
+# 功能：代码推送/PR 时自动运行单元测试和构建
+# ============================================================================
+
+name: Frontend CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'client/**'
+      - '.github/workflows/frontend-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'client/**'
+
+jobs:
+  test:
+    name: Run Frontend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'client/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd client
+          npm ci
+
+      - name: Run vitest tests
+        run: |
+          cd client
+          npx vitest run --coverage
+        env:
+          CI: true
+
+      - name: Build production bundle
+        run: |
+          cd client
+          npx vite build
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          directory: client/coverage
+          flags: frontend
+          fail_ci_if_error: false
+
+      - name: Upload build artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: client/dist
+          name: frontend-dist
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-results
+          path: client/coverage/

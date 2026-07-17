@@ -1,5 +1,5 @@
 <template>
-  <div class="conv-list">
+  <div class="conv-list page-container card-animate">
     <div class="page-header">
       <h2><el-icon><ChatDotSquare /></el-icon> 我的对话</h2>
       <p>已保存的对话历史，登录任何设备都能继续</p>
@@ -12,7 +12,7 @@
 
       <div v-for="conv in conversations" :key="conv.id" class="conv-item">
         <div class="conv-info" @click="restore(conv)">
-          <el-icon :size="20" color="#409eff"><ChatDotSquare /></el-icon>
+          <el-icon :size="20" color="var(--primary)"><ChatDotSquare /></el-icon>
           <div class="conv-detail">
             <span class="conv-title">{{ conv.title || '新对话' }}</span>
             <span class="conv-meta">{{ conv.message_count }} 条消息 · {{ conv.updated_at?.slice(0, 16)?.replace('T', ' ') }}</span>
@@ -81,16 +81,51 @@ onMounted(load)
 </script>
 
 <style scoped>
-.conv-list { max-width: 1000px; margin: 0 auto; }
-.page-header { margin-bottom: 16px; }
-.page-header h2 { font-size: 22px; color: #303133; display: flex; align-items: center; gap: 8px; }
-.page-header p { color: #909399; font-size: 14px; margin-top: 4px; }
-.empty { padding: 40px 0; }
-.conv-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
-.conv-item:last-child { border-bottom: none; }
-.conv-info { display: flex; align-items: center; gap: 12px; flex: 1; cursor: pointer; }
-.conv-detail { display: flex; flex-direction: column; }
-.conv-title { font-weight: 600; color: #303133; }
-.conv-meta { font-size: 13px; color: #909399; margin-top: 2px; }
-.conv-actions { display: flex; align-items: center; gap: 8px; }
+.conv-list {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.empty {
+  padding: 40px 0;
+}
+.conv-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-lighter);
+  transition: background var(--transition-fast);
+}
+.conv-item:hover {
+  background: var(--primary-bg);
+}
+.conv-item:last-child {
+  border-bottom: none;
+}
+.conv-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  cursor: pointer;
+}
+.conv-detail {
+  display: flex;
+  flex-direction: column;
+}
+.conv-title {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.conv-meta {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.conv-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 </style>

@@ -13,7 +13,7 @@ class Config:
 
     # ---------- MySQL 数据库配置 ----------
     DB_HOST = os.environ.get('DB_HOST', '127.0.0.1')
-    DB_PORT = int(os.environ.get('DB_PORT', 3306))
+    DB_PORT = int(os.environ.get('DB_PORT', '3306'))
     DB_USER = os.environ.get('DB_USER', 'root')
     DB_PASSWORD = os.environ.get('DB_PASSWORD', '17759400586')
     DB_NAME = os.environ.get('DB_NAME', 'dbenterprise')
@@ -40,10 +40,15 @@ class Config:
     CHROMA_COLLECTION_NAME = 'enterprise_knowledge'
 
     # ---------- RAG 配置 ----------
+    CHUNK_SIZE = 500       # 文档切分的块大小（字符数）
+    CHUNK_OVERLAP = 50     # 文档切分的块重叠（字符数）
+    RETRIEVAL_K = 5        # 检索返回的最相关文档块数量
+    RETRIEVAL_SCORE_THRESHOLD = 0.3  # 检索相似度阈值
+
     # ---------- Redis 缓存配置 ----------
     REDIS_HOST = os.environ.get('REDIS_HOST', '127.0.0.1')
-    REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
-    REDIS_DB = int(os.environ.get('REDIS_DB', 0))
+    REDIS_PORT = int(os.environ.get('REDIS_PORT', '6379'))
+    REDIS_DB = int(os.environ.get('REDIS_DB', '0'))
     REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', None)
     REDIS_DECODE_RESPONSES = True
 
@@ -54,15 +59,13 @@ class Config:
     CACHE_TTL_CATEGORIES = 600    # 分类缓存：10分钟
     CACHE_TTL_USER_STATS = 600    # 用户统计缓存：10分钟
 
-    # Rate Limiting
-    RATE_LIMIT_ENABLED = True
-    RATE_LIMIT_DEFAULT = "100/minute"  # 默认：每分钟100次
-    RATE_LIMIT_QA = "30/minute"        # 问答：每分钟30次
+    # ---------- 日志配置 ----------
+    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO').upper()
+    LOG_DIR = os.environ.get('LOG_DIR', './logs')
 
-    CHUNK_SIZE = 500       # 文档切分的块大小（字符数）
-    CHUNK_OVERLAP = 50     # 文档切分的块重叠（字符数）
-    RETRIEVAL_K = 5        # 检索返回的最相关文档块数量
-    RETRIEVAL_SCORE_THRESHOLD = 0.3  # 检索相似度阈值
+    # ---------- Sentry 错误监控 ----------
+    SENTRY_DSN = os.environ.get('SENTRY_DSN', '')
+    SENTRY_TRACES_SAMPLE_RATE = float(os.environ.get('SENTRY_TRACES_SAMPLE_RATE', '0.1'))
 
 
 class DevelopmentConfig(Config):

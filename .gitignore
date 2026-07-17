@@ -7,6 +7,7 @@ build/
 .venv/
 venv/
 *.egg
+*.pyc
 
 # Vue / Node
 node_modules/
@@ -35,3 +36,12 @@ server/chroma_db/*
 
 # Logs
 *.log
+logs/
+
+# Testing
+.pytest_cache/
+coverage/
+htmlcov/
+.coverage
+*.coverage.*
+.coverage.*

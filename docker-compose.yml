@@ -1,0 +1,97 @@
+# ============================================================================
+# 企业知识库 RAG 问答系统 - Docker 部署
+# ============================================================================
+# 使用方法：
+#   docker-compose up -d
+# ============================================================================
+
+version: '3.8'
+
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: oa-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: oa_password_2024
+      MYSQL_DATABASE: dbenterprise
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./server/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: oa-redis
+    restart: always
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Flask 后端
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: oa-backend
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      FLASK_ENV: production
+      SECRET_KEY: ${SECRET_KEY:-enterprise-oa-secret-docker}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-jwt-secret-docker}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: oa_password_2024
+      DB_NAME: dbenterprise
+      OLLAMA_BASE_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:3b}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-qwen3-embedding:4b}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      LOG_LEVEL: INFO
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./server/chroma_db:/app/chroma_db
+      - ./server/uploads:/app/uploads
+      - ./server/logs:/app/logs
+
+  # Nginx 前端
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: oa-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    environment:
+      - API_BASE_URL=/api
+
+volumes:
+  mysql_data:
+  redis_data:

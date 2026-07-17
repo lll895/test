@@ -4,6 +4,9 @@
 
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 # 创建全局 SQLAlchemy 实例
 db = SQLAlchemy()
@@ -19,4 +22,4 @@ def init_db(app: Flask):
     with app.app_context():
         # 创建所有数据表（如果尚不存在）
         db.create_all()
-        print("[数据库] 数据表初始化完成")
+        logger.info("数据表初始化完成")

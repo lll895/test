@@ -82,6 +82,8 @@ export const authAPI = {
   register(data) { return request.post('/auth/register', data) },
   getProfile() { return request.get('/auth/profile') },
   updateProfile(data) { return request.put('/auth/profile', data) },
+  forgotPassword(data) { return request.post('/auth/forgot-password', data) },
+  resetPassword(data) { return request.post('/auth/reset-password', data) },
 }
 
 // ---------- 文档接口 ----------
@@ -94,12 +96,15 @@ export const documentAPI = {
       timeout: 300000, // 上传超时5分钟
     })
   },
+  update(id, data) { return request.put(`/documents/${id}`, data) },
+  updateContent(id, data) { return request.put(`/documents/${id}/content`, data) },
   delete(id) { return request.delete(`/documents/${id}`) },
   getCategories() { return request.get('/documents/categories') },
   createCategory(data) { return request.post('/documents/categories', data) },
   deleteCategory(id) { return request.delete(`/documents/categories/${id}`) },
   search(params) { return request.get('/documents/search', { params }) },
   getContent(id) { return request.get(`/documents/${id}/content`) },
+  getVersions(id) { return request.get(`/documents/${id}/versions`) },
 }
 
 // ---------- 问答接口 ----------

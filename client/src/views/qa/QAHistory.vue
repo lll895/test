@@ -3,7 +3,7 @@
      ============================================================ -->
 
 <template>
-  <div class="qa-history">
+  <div class="qa-history page-container card-animate">
     <div class="page-header">
       <h2>问答历史</h2>
       <p>查看您的历史问答记录</p>
@@ -101,9 +101,9 @@
           </ul>
         </div>
         <div class="detail-meta">
-          <el-tag size="small" type="info">⏱ 耗时: {{ detailData.cost_time_ms }}ms</el-tag>
-          <el-tag size="small" type="info">📄 检索: {{ detailData.chunks_retrieved }} 块</el-tag>
-          <el-tag size="small" type="info">🤖 模型: {{ detailData.model_used }}</el-tag>
+          <el-tag size="small" type="info">&#9201; 耗时: {{ detailData.cost_time_ms }}ms</el-tag>
+          <el-tag size="small" type="info">&#128196; 检索: {{ detailData.chunks_retrieved }} 块</el-tag>
+          <el-tag size="small" type="info">&#129302; 模型: {{ detailData.model_used }}</el-tag>
         </div>
       </div>
     </el-dialog>
@@ -219,26 +219,13 @@ onMounted(() => {
   margin: 0 auto;
 }
 
-.page-header {
-  margin-bottom: 20px;
-}
-.page-header h2 {
-  font-size: 22px;
-  color: #303133;
-  margin-bottom: 4px;
-}
-.page-header p {
-  color: #909399;
-  font-size: 14px;
-}
-
 /* 统计卡片 */
 .stats-row {
   margin-bottom: 16px;
 }
 .stat-card {
   margin-bottom: 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 .stat-inner {
   display: flex;
@@ -251,13 +238,13 @@ onMounted(() => {
 .stat-value {
   font-size: 22px;
   font-weight: 700;
-  color: #303133;
+  color: var(--text-primary);
   margin: 0;
   line-height: 1.2;
 }
 .stat-label {
   font-size: 13px;
-  color: #909399;
+  color: var(--text-secondary);
   margin: 2px 0 0;
 }
 
@@ -275,15 +262,15 @@ onMounted(() => {
   cursor: pointer;
 }
 .question-cell:hover .question-text {
-  color: #409eff;
+  color: var(--primary);
 }
 .question-text {
-  color: #303133;
-  transition: color 0.3s;
+  color: var(--text-primary);
+  transition: color var(--transition-fast);
 }
 
 .answer-preview {
-  color: #909399;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
@@ -294,9 +281,10 @@ onMounted(() => {
 }
 
 .no-feedback {
-  color: #c0c4cc;
+  color: var(--text-placeholder);
 }
 
+/* 详情 */
 .qa-detail {
   max-height: 60vh;
   overflow-y: auto;
@@ -306,109 +294,24 @@ onMounted(() => {
 }
 .detail-section h4 {
   font-size: 14px;
-  color: #909399;
+  color: var(--text-secondary);
   margin-bottom: 8px;
 }
 .detail-section p {
-  color: #303133;
+  color: var(--text-primary);
   line-height: 1.6;
 }
 .detail-answer {
-  background: #f5f7fa;
+  background: var(--primary-bg);
   padding: 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   line-height: 1.6;
   white-space: pre-wrap;
 }
 .detail-section ul {
   padding-left: 20px;
-  color: #409eff;
+  color: var(--primary);
 }
-.detail-meta {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-</style>
-
-<style scoped>
-.qa-history {
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.page-header {
-  margin-bottom: 20px;
-}
-.page-header h2 {
-  font-size: 22px;
-  color: #303133;
-  margin-bottom: 4px;
-}
-.page-header p {
-  color: #909399;
-  font-size: 14px;
-}
-
-.question-cell {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-.question-cell:hover .question-text {
-  color: #409eff;
-}
-.question-text {
-  color: #303133;
-  transition: color 0.3s;
-}
-
-.answer-preview {
-  color: #909399;
-  font-size: 13px;
-}
-
-.pagination-wrapper {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 20px;
-}
-
-.no-feedback {
-  color: #c0c4cc;
-}
-
-/* 详情样式 */
-.qa-detail {
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-.detail-section {
-  margin-bottom: 20px;
-}
-.detail-section h4 {
-  font-size: 14px;
-  color: #909399;
-  margin-bottom: 8px;
-}
-.detail-section p {
-  color: #303133;
-  line-height: 1.6;
-}
-.detail-answer {
-  background: #f5f7fa;
-  padding: 12px;
-  border-radius: 8px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
-.detail-section ul {
-  padding-left: 20px;
-  color: #409eff;
-}
-
 .detail-meta {
   display: flex;
   gap: 8px;

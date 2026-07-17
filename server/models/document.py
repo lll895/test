@@ -53,6 +53,12 @@ class Document(db.Model):
     status = db.Column(db.Enum('processing', 'ready', 'failed'), default='processing', comment='处理状态')
     chunk_count = db.Column(db.Integer, default=0, comment='文本块数量')
     error_message = db.Column(db.Text, comment='错误信息')
+
+    # 版本管理字段
+    version = db.Column(db.Integer, default=1, comment='文档版本号')
+    version_group_id = db.Column(db.String(64), comment='版本分组ID（同组文档不同版本共享此ID）')
+    change_note = db.Column(db.String(500), comment='版本变更说明')
+
     created_at = db.Column(db.DateTime, default=datetime.now, comment='创建时间')
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now, comment='更新时间')
 
@@ -70,12 +76,16 @@ class Document(db.Model):
             'file_size': self.file_size,
             'file_type': self.file_type,
             'summary': self.summary,
+            'content_text': self.content_text,
             'category_id': self.category_id,
             'category_name': self.category.name if self.category else None,
             'uploader': self.uploader.real_name or self.uploader.username if self.uploader else None,
             'status': self.status,
             'chunk_count': self.chunk_count,
             'error_message': self.error_message,
+            'version': self.version,
+            'version_group_id': self.version_group_id,
+            'change_note': self.change_note,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }

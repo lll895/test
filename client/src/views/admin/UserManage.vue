@@ -3,7 +3,7 @@
      ============================================================ -->
 
 <template>
-  <div class="user-manage">
+  <div class="user-manage page-container card-animate">
     <div class="page-header">
       <h2>用户管理</h2>
       <p>管理系统中的所有用户账号</p>
@@ -161,19 +161,6 @@ onMounted(loadUsers)
 .user-manage {
   max-width: 1400px;
   margin: 0 auto;
-}
-
-.page-header {
-  margin-bottom: 20px;
-}
-.page-header h2 {
-  font-size: 22px;
-  color: #303133;
-  margin-bottom: 4px;
-}
-.page-header p {
-  color: #909399;
-  font-size: 14px;
 }
 
 .filter-card {

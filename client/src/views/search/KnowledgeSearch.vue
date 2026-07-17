@@ -4,7 +4,7 @@
      ============================================================ -->
 
 <template>
-  <div class="search-page">
+  <div class="search-page page-container card-animate">
     <div class="search-container">
       <!-- 搜索框 -->
       <div class="search-box">
@@ -93,7 +93,7 @@
 
       <!-- 初始状态提示 -->
       <div v-else class="search-hint">
-        <el-icon :size="48" color="#c0c4cc"><SearchIcon /></el-icon>
+        <el-icon :size="48" color="var(--text-placeholder)"><SearchIcon /></el-icon>
         <p>输入关键词搜索知识库文档</p>
       </div>
     </div>
@@ -220,8 +220,8 @@ onMounted(loadCategories)
 }
 
 .search-box :deep(.el-input-group__append) {
-  background: #409eff;
-  border-color: #409eff;
+  background: var(--primary);
+  border-color: var(--primary);
 }
 .search-box :deep(.el-input-group__append .el-button) {
   color: #fff;
@@ -238,7 +238,7 @@ onMounted(loadCategories)
 }
 
 .result-stats {
-  color: #909399;
+  color: var(--text-secondary);
   font-size: 14px;
   margin-bottom: 16px;
 }
@@ -250,7 +250,7 @@ onMounted(loadCategories)
 .result-card {
   margin-bottom: 12px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--transition-normal);
 }
 .result-card:hover {
   transform: translateX(4px);
@@ -264,7 +264,7 @@ onMounted(loadCategories)
 }
 .result-title {
   font-size: 16px;
-  color: #303133;
+  color: var(--text-primary);
   margin: 0;
   flex: 1;
   display: flex;
@@ -274,12 +274,12 @@ onMounted(loadCategories)
 
 .result-meta {
   font-size: 13px;
-  color: #909399;
+  color: var(--text-secondary);
   margin-bottom: 6px;
 }
 
 .result-summary {
-  color: #606266;
+  color: var(--text-regular);
   font-size: 14px;
   line-height: 1.6;
   margin: 0;
@@ -298,7 +298,7 @@ onMounted(loadCategories)
 .search-hint {
   text-align: center;
   padding: 100px 0;
-  color: #c0c4cc;
+  color: var(--text-placeholder);
 }
 .search-hint p {
   margin-top: 12px;
@@ -311,16 +311,16 @@ onMounted(loadCategories)
 }
 .doc-content h4 {
   margin: 0 0 12px;
-  color: #303133;
+  color: var(--text-primary);
 }
 .content-text {
-  background: #f5f7fa;
+  background: var(--primary-bg);
   padding: 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   line-height: 1.8;
   white-space: pre-wrap;
   font-size: 14px;
-  color: #303133;
+  color: var(--text-primary);
   max-height: 500px;
   overflow-y: auto;
 }

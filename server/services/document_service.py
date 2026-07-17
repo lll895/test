@@ -6,7 +6,10 @@
 from models.document import Document, DocumentChunk
 from services.vector_service import vector_service
 from utils import db
+from utils.logger import get_logger
 import os
+
+logger = get_logger(__name__)
 
 
 class DocumentService:
@@ -62,9 +65,9 @@ class DocumentService:
                 for para in doc.paragraphs:
                     text += para.text + "\n"
 
-            print(f"[文档服务] 文本提取完成: {len(text)} 字符")
+            logger.info(f"文本提取完成: {len(text)} 字符")
         except Exception as e:
-            print(f"[文档服务] 文本提取失败: {e}")
+            logger.error(f"文本提取失败: {e}")
             raise
 
         return text
@@ -82,7 +85,7 @@ class DocumentService:
             处理是否成功
         """
         try:
-            print(f"[文档服务] 开始处理文档 ID={doc_id}: {title}")
+            logger.info(f"开始处理文档 ID={doc_id}: {title}")
 
             # 1. 将文档添加到向量数据库
             chunks = vector_service.add_document(doc_id, title, content)
@@ -108,12 +111,12 @@ class DocumentService:
                 doc.summary = content[:200] + '...' if len(content) > 200 else content
 
             db.session.commit()
-            print(f"[文档服务] 文档 '{title}' 处理完成，共 {len(chunks)} 个文本块")
+            logger.info(f"文档 '{title}' 处理完成，共 {len(chunks)} 个文本块")
             return True
 
         except Exception as e:
             db.session.rollback()
-            print(f"[文档服务] 文档 '{title}' 处理失败: {e}")
+            logger.error(f"文档 '{title}' 处理失败: {e}")
 
             # 更新文档状态为失败
             doc = Document.query.get(doc_id)

@@ -9,8 +9,11 @@ from services.cache_service import cache_service
 from config import Config
 from utils import db
 from models.knowledge_gap import KnowledgeGap
+from utils.logger import get_logger
 import time
 import hashlib
+
+logger = get_logger(__name__)
 
 
 class RagService:
@@ -44,7 +47,7 @@ class RagService:
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            print(f"[RAG服务] 记录知识盲区失败: {e}")
+            logger.error(f"记录知识盲区失败: {e}")
 
     def query(self, question: str, session_id: str = None) -> dict:
         """
@@ -63,7 +66,7 @@ class RagService:
             包含 answer、sources、chunks_retrieved 和 cost_time_ms 的字典
         """
         start_time = time.time()
-        print(f"[RAG服务] 开始处理问题: {question[:80]}...")
+        logger.info(f"开始处理问题: {question[:80]}...")
 
         # ---- 第一步：检查缓存（精确匹配） ----
         cached = cache_service.get_qa_cache(question)
@@ -71,11 +74,11 @@ class RagService:
             elapsed = int((time.time() - start_time) * 1000)
             cached['cost_time_ms'] = elapsed
             cached['from_cache'] = True
-            print(f"[RAG服务] 命中缓存，直接返回 (耗时: {elapsed}ms)")
+            logger.info(f"命中缓存，直接返回 (耗时: {elapsed}ms)")
             return cached
 
         # ---- 第二步：向量检索（带缓存） ----
-        print("[RAG服务] 步骤1: 向量检索...")
+        logger.info("步骤1: 向量检索...")
         relevant_chunks = vector_service.similarity_search(question)
 
         if not relevant_chunks:
@@ -104,7 +107,7 @@ class RagService:
             }
 
         # ---- 第三步：构建上下文 ----
-        print("[RAG服务] 步骤2: 构建上下文...")
+        logger.info("步骤2: 构建上下文...")
         context_parts = []
         sources = []
         seen_docs = set()  # 用于去重
@@ -135,7 +138,7 @@ class RagService:
             conversation_history = cache_service.get_conversation_context(session_id)
 
         # ---- 第五步：生成回答 ----
-        print("[RAG服务] 步骤3: 生成回答...")
+        logger.info("步骤3: 生成回答...")
         answer = llm_service.generate_answer(
             question=question,
             context=context,
@@ -163,7 +166,7 @@ class RagService:
             cache_service.append_conversation(session_id, "user", question)
             cache_service.append_conversation(session_id, "assistant", answer)
 
-        print(f"[RAG服务] 问答完成，耗时: {elapsed}ms，引用来源: {len(sources)}个")
+        logger.info(f"问答完成，耗时: {elapsed}ms，引用来源: {len(sources)}个")
 
         return result
 

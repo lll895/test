@@ -10,8 +10,11 @@
 
 from config import Config
 from langchain_ollama import ChatOllama
+from utils.logger import get_logger
 import json
 import re
+
+logger = get_logger(__name__)
 
 
 # 问候模式列表（用于快速匹配）
@@ -62,12 +65,12 @@ class LLMService:
             self._llm = ChatOllama(
                 model=self.model_name,
                 base_url=self.base_url,
-                temperature=0.3,           # 降低温度以加快生成速度
-                top_p=0.8,                 # 核采样参数
-                num_predict=2048,          # 减少最大生成 token 数，加快响应
-                top_k=30,                  # 减少候选 token 数
+                temperature=0.3,
+                top_p=0.8,
+                num_predict=2048,
+                top_k=30,
                 repeat_penalty=1.1,
-                num_ctx=4096,              # 限制上下文窗口大小，加速处理
+                num_ctx=4096,
             )
         return self._llm
 
@@ -177,15 +180,15 @@ class LLMService:
         # 第一步：检测是否为社交性消息（问候、感谢、告别）
         social_type = self._is_greeting(question)
         if social_type:
-            print(f"[LLM服务] 检测到{social_type}消息，快速回复")
+            logger.info(f"检测到{social_type}消息，快速回复")
             return self._get_greeting_response(social_type)
 
         # 第二步：构建带上下文的提示词
         prompt = self._build_prompt(question, context, conversation_history)
 
         # 第三步：调用 LLM 生成回答
-        print(f"[LLM服务] 开始生成回答 (上下文长度: {len(context)}字符, "
-              f"对话历史: {len(conversation_history or [])}条)")
+        logger.info(f"开始生成回答 (上下文长度: {len(context)}字符, "
+                    f"对话历史: {len(conversation_history or [])}条)")
         try:
             response = self.llm.invoke(prompt)
             answer = response.content
@@ -193,11 +196,11 @@ class LLMService:
             # 后处理：清理回答
             answer = self._post_process(answer)
 
-            print(f"[LLM服务] 回答生成完成 ({len(answer)}字符)")
+            logger.info(f"回答生成完成 ({len(answer)}字符)")
             return answer
 
         except Exception as e:
-            print(f"[LLM服务] 生成失败: {e}")
+            logger.error(f"生成失败: {e}")
             return ("抱歉，我遇到了一个技术故障 😅 请稍后再试一次。"
                     "如果问题持续存在，请联系系统管理员。")
 
@@ -241,14 +244,14 @@ class LLMService:
         # 构建提示词
         prompt = self._build_prompt(question, context, conversation_history)
 
-        print(f"[LLM服务] 开始流式生成...")
+        logger.info("开始流式生成...")
         try:
             # 使用 stream 方法逐片生成
             for chunk in self.llm.stream(prompt):
                 if chunk.content:
                     yield chunk.content
         except Exception as e:
-            print(f"[LLM服务] 流式生成失败: {e}")
+            logger.error(f"流式生成失败: {e}")
             yield "抱歉，回答生成过程中出现了问题，请稍后再试。"
 
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="bookmark-list">
+  <div class="bookmark-list page-container card-animate">
     <div class="page-header">
       <h2><el-icon><Star /></el-icon> 我的收藏</h2>
       <p>收藏的问答和文档，支持添加笔记</p>
@@ -13,7 +13,7 @@
     </el-tabs>
 
     <!-- 收藏列表 -->
-    <el-card v-if="bookmarks.length > 0" shadow="hover">
+    <el-card v-if="bookmarks.length > 0" shadow="hover" class="bookmark-card">
       <div v-for="item in bookmarks" :key="item.id" class="bookmark-item">
         <div class="bm-header">
           <el-tag :type="item.type === 'qa' ? 'primary' : 'success'" size="small" effect="plain">
@@ -42,7 +42,7 @@
         style="margin-top:16px;justify-content:center" />
     </el-card>
 
-    <el-empty v-else description="还没有收藏，在问答或文档页点击⭐收藏" />
+    <el-empty v-else description="还没有收藏，在问答或文档页点击&#11088;收藏" />
 
     <!-- 笔记编辑对话框 -->
     <el-dialog v-model="noteVisible" title="编辑笔记" width="400px">
@@ -109,15 +109,59 @@ onMounted(loadBookmarks)
 </script>
 
 <style scoped>
-.bookmark-list { max-width: 1000px; margin: 0 auto; }
-.page-header { margin-bottom: 16px; }
-.page-header h2 { font-size: 22px; color: #303133; display: flex; align-items: center; gap: 8px; }
-.page-header p { color: #909399; font-size: 14px; margin-top: 4px; }
-.bookmark-item { padding: 8px 0; }
-.bm-header { display: flex; align-items: center; gap: 8px; }
-.bm-title { flex: 1; font-weight: 600; color: #303133; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bm-preview { color: #909399; font-size: 13px; margin: 6px 0 4px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.bm-note { display: flex; align-items: center; gap: 4px; color: #e6a23c; font-size: 13px; background: #fdf6ec; padding: 4px 8px; border-radius: 4px; margin: 4px 0; }
-.bm-footer { display: flex; justify-content: space-between; align-items: center; }
-.bm-time { color: #c0c4cc; font-size: 12px; }
+.bookmark-list {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.bookmark-card {
+  margin-top: 8px;
+}
+
+.bookmark-item {
+  padding: 8px 0;
+}
+.bm-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bm-title {
+  flex: 1;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bm-preview {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 6px 0 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.bm-note {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--warning);
+  font-size: 13px;
+  background: #fdf6ec;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  margin: 4px 0;
+}
+.bm-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.bm-time {
+  color: var(--text-placeholder);
+  font-size: 12px;
+}
 </style>

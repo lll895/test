@@ -10,9 +10,12 @@ from models.conversation import Conversation, ConversationMessage
 from services.rag_service import rag_service
 from services.cache_service import cache_service
 from utils import db
+from utils.logger import get_logger
 import json
 import uuid
 import time
+
+logger = get_logger(__name__)
 
 # 创建问答蓝图
 qa_bp = Blueprint('qa', __name__, url_prefix='/api/qa')
@@ -102,7 +105,7 @@ def ask_question():
         })
 
     except Exception as e:
-        print(f"[问答路由] 处理失败: {e}")
+        logger.error(f"处理失败: {e}")
         return jsonify({'code': 500, 'data': None, 'message': f'问答处理失败: {str(e)}'}), 500
 
 
@@ -275,22 +278,37 @@ def get_history():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
 
-    query = QaLog.query.filter_by(user_id=user_id).order_by(QaLog.created_at.desc())
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    try:
+        query = QaLog.query.filter_by(user_id=user_id).order_by(QaLog.created_at.desc())
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
-    logs = [log.to_dict() for log in pagination.items]
+        logs = []
+        for log in pagination.items:
+            try:
+                logs.append(log.to_dict())
+            except Exception as e:
+                logger.error(f"序列化问答记录失败 id={log.id}: {e}")
+                logs.append({
+                    'id': log.id,
+                    'question': log.question[:100] if log.question else '(未知)',
+                    'answer': '(数据加载失败)',
+                    'created_at': log.created_at.isoformat() if log.created_at else None,
+                })
 
-    return jsonify({
-        'code': 200,
-        'data': {
-            'list': logs,
-            'total': pagination.total,
-            'page': page,
-            'per_page': per_page,
-            'pages': pagination.pages,
-        },
-        'message': '获取成功',
-    })
+        return jsonify({
+            'code': 200,
+            'data': {
+                'list': logs,
+                'total': pagination.total,
+                'page': page,
+                'per_page': per_page,
+                'pages': pagination.pages,
+            },
+            'message': '获取成功',
+        })
+    except Exception as e:
+        logger.error(f"获取问答历史失败 user_id={user_id}: {e}", exc_info=True)
+        return jsonify({'code': 500, 'data': None, 'message': '获取问答历史失败，请稍后再试'}), 500
 
 
 @qa_bp.route('/history/all', methods=['GET'])
@@ -522,6 +540,20 @@ def save_session():
         return jsonify({'code': 400, 'data': None, 'message': '缺少 session_id'}), 400
 
     messages = cache_service.get_conversation_context(session_id)
+
+    # 如果 Redis 没有数据，尝试从 qa_logs 重建最近对话
+    if not messages:
+        recent_logs = QaLog.query.filter_by(user_id=user_id).order_by(
+            QaLog.created_at.desc()).limit(10).all()
+        if recent_logs:
+            messages = []
+            for log in reversed(recent_logs):
+                messages.append({'role': 'user', 'content': log.question})
+                messages.append({'role': 'assistant', 'content': log.answer[:500]})
+            # 同时写回 Redis 以便后续使用
+            for msg in messages:
+                cache_service.append_conversation(session_id, msg['role'], msg['content'])
+
     if not messages:
         return jsonify({'code': 400, 'data': None, 'message': '没有可保存的对话'}), 400
 

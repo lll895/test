@@ -13,8 +13,11 @@ from models.knowledge_gap import KnowledgeGap
 from services.vector_service import vector_service
 from services.cache_service import cache_service
 from utils import db
+from utils.logger import get_logger
 from datetime import datetime, timedelta
 from sqlalchemy import func
+
+logger = get_logger(__name__)
 
 # 创建管理员蓝图
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
